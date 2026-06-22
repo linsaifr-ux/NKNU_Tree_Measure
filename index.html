@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校園樹木碳匯量測記錄表 產生器</title>
+<style>
+  :root{
+    --green:#2e7d32; --green-d:#1b5e20; --green-l:#e8f5e9;
+    --bg:#f4f6f4; --card:#ffffff; --line:#d7ddd7; --ink:#1f2a1f; --muted:#5d6b5d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.5}
+  header{background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:20px 16px}
+  header h1{margin:0;font-size:1.25rem}
+  header p{margin:6px 0 0;font-size:.85rem;opacity:.9}
+  main{max-width:680px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .card h2{margin:0 0 14px;font-size:1rem;color:var(--green-d);display:flex;align-items:center;gap:8px}
+  .card h2 .n{background:var(--green);color:#fff;width:22px;height:22px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;font-size:.8rem}
+  label{display:block;font-size:.86rem;font-weight:600;margin:12px 0 5px;color:var(--ink)}
+  .hint{font-weight:400;color:var(--muted);font-size:.78rem}
+  input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;
+    font-size:1rem;background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(46,125,50,.12)}
+  .row{display:flex;gap:12px}
+  .row>div{flex:1}
+  .pill{background:var(--green-l);border-radius:9px;padding:9px 12px;font-size:.86rem;color:var(--green-d);
+    margin-top:8px;font-weight:600}
+  .pill b{font-size:1.02rem}
+  .filebox{border:1.5px dashed var(--line);border-radius:11px;padding:14px;text-align:center;cursor:pointer;
+    background:#fafdfa;transition:.15s}
+  .filebox:hover{border-color:var(--green);background:var(--green-l)}
+  .filebox input{display:none}
+  .filebox .ico{font-size:1.6rem}
+  .filebox .lbl{font-size:.85rem;color:var(--muted);margin-top:4px}
+  .preview{margin-top:10px;display:none}
+  .preview img{max-width:100%;max-height:220px;border-radius:9px;border:1px solid var(--line)}
+  .genbtn{width:100%;padding:15px;background:var(--green);color:#fff;border:none;border-radius:11px;
+    font-size:1.05rem;font-weight:700;cursor:pointer;transition:.15s}
+  .genbtn:hover{background:var(--green-d)}
+  .genbtn:disabled{background:#9bb89b;cursor:not-allowed}
+  .msg{margin-top:12px;font-size:.88rem;padding:11px;border-radius:9px;display:none}
+  .msg.ok{background:#e8f5e9;color:var(--green-d);display:block}
+  .msg.err{background:#fdecea;color:#b3261e;display:block}
+  footer{text-align:center;color:var(--muted);font-size:.78rem;padding:8px 16px 28px}
+  .twocol{display:flex;gap:12px;flex-wrap:wrap}
+  .twocol>div{flex:1;min-width:140px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌳 校園樹木碳匯量測記錄表</h1>
+  <p>國立高雄師範大學 · 輸入資料即可下載與範例相同格式的 Excel</p>
+</header>
+
+<main>
+  <!-- 1 基本資料 -->
+  <div class="card">
+    <h2><span class="n">1</span> 樹木編號</h2>
+    <label>地點 <span class="hint">（決定編號代碼）</span></label>
+    <select id="loc"></select>
+    <div class="row" style="margin-top:4px">
+      <div>
+        <label>流水號 <span class="hint">（如 5 → 005）</span></label>
+        <input id="seq" type="number" min="1" value="1" inputmode="numeric">
+      </div>
+      <div>
+        <label>或自訂完整編號 <span class="hint">（選填）</span></label>
+        <input id="noOverride" type="text" placeholder="例：YE-008">
+      </div>
+    </div>
+    <div class="pill">樹木編號：<b id="treeNoPreview">YE-001</b></div>
+  </div>
+
+  <!-- 2 樹種 -->
+  <div class="card">
+    <h2><span class="n">2</span> 樹種</h2>
+    <label>樹種</label>
+    <select id="species"></select>
+    <div id="speciesOtherWrap" style="display:none">
+      <label>自行輸入樹種名稱</label>
+      <input id="speciesOther" type="text" placeholder="例：欖仁">
+    </div>
+    <label>位置敘述 <span class="hint">（寫在表格「位置」欄）</span></label>
+    <input id="position" type="text" placeholder="例：致理大樓旁">
+  </div>
+
+  <!-- 3 GPS -->
+  <div class="card">
+    <h2><span class="n">3</span> GPS 定位（TWD97 / TM2）</h2>
+    <div class="row">
+      <div>
+        <label>X 座標</label>
+        <input id="gpsX" type="number" inputmode="numeric" placeholder="例：189007">
+      </div>
+      <div>
+        <label>Y 座標</label>
+        <input id="gpsY" type="number" inputmode="numeric" placeholder="例：2521023">
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 量測 -->
+  <div class="card">
+    <h2><span class="n">4</span> 量測數值</h2>
+    <div class="row">
+      <div>
+        <label>樹幹腰圍 (cm)</label>
+        <input id="circ" type="number" step="0.1" inputmode="decimal" placeholder="例：60.6">
+      </div>
+      <div>
+        <label>樹全高 (m)</label>
+        <input id="height" type="number" step="0.001" inputmode="decimal" placeholder="例：7.533">
+      </div>
+    </div>
+    <div class="pill">換算直徑：<b id="diaPreview">—</b> cm　<span class="hint">（腰圍 ÷ π）</span></div>
+    <label style="margin-top:14px">量測 / 拍攝日期</label>
+    <input id="date" type="date">
+    <div class="pill">民國日期：<b id="rocPreview">—</b></div>
+  </div>
+
+  <!-- 5 照片 -->
+  <div class="card">
+    <h2><span class="n">5</span> 照片</h2>
+    <div class="twocol">
+      <div>
+        <label>近照</label>
+        <label class="filebox" for="closePhoto">
+          <div class="ico">📷</div><div class="lbl">點選上傳近照</div>
+          <input id="closePhoto" type="file" accept="image/*">
+        </label>
+        <div class="preview" id="closePrev"><img></div>
+      </div>
+      <div>
+        <label>大範圍照片</label>
+        <label class="filebox" for="widePhoto">
+          <div class="ico">🌲</div><div class="lbl">點選上傳大範圍照</div>
+          <input id="widePhoto" type="file" accept="image/*">
+        </label>
+        <div class="preview" id="widePrev"><img></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="genbtn" id="gen">⬇ 產生並下載 Excel</button>
+  <div class="msg" id="msg"></div>
+</main>
+
+<footer>檔案於瀏覽器本機產生，照片與資料不會上傳到任何伺服器。</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
