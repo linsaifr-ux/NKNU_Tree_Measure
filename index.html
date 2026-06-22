@@ -46,6 +46,9 @@
   .msg{margin-top:12px;font-size:.88rem;padding:11px;border-radius:9px;display:none}
   .msg.ok{background:#e8f5e9;color:var(--green-d);display:block}
   .msg.err{background:#fdecea;color:#b3261e;display:block}
+  .field-err{color:#b3261e;font-size:.78rem;font-weight:600;margin-top:5px;display:none}
+  .field-err.show{display:block}
+  input.invalid{border-color:#b3261e;box-shadow:0 0 0 3px rgba(179,38,30,.12)}
   footer{text-align:center;color:var(--muted);font-size:.78rem;padding:8px 16px 28px}
   .twocol{display:flex;gap:12px;flex-wrap:wrap}
   .twocol>div{flex:1;min-width:140px}
@@ -87,6 +90,7 @@
     </div>
     <label>位置敘述 <span class="hint">（寫在表格「位置」欄）</span></label>
     <input id="position" type="text" placeholder="例：致理大樓旁">
+    <div class="field-err" id="e_position">⚠ 尚未填寫位置敘述</div>
   </div>
 
   <!-- 3 GPS -->
@@ -96,10 +100,12 @@
       <div>
         <label>X 座標</label>
         <input id="gpsX" type="number" inputmode="numeric" placeholder="例：189007">
+        <div class="field-err" id="e_gpsX">⚠ 尚未填寫 X 座標</div>
       </div>
       <div>
         <label>Y 座標</label>
         <input id="gpsY" type="number" inputmode="numeric" placeholder="例：2521023">
+        <div class="field-err" id="e_gpsY">⚠ 尚未填寫 Y 座標</div>
       </div>
     </div>
   </div>
@@ -111,10 +117,12 @@
       <div>
         <label>樹幹腰圍 (cm)</label>
         <input id="circ" type="number" step="0.1" inputmode="decimal" placeholder="例：60.6">
+        <div class="field-err" id="e_circ">⚠ 尚未填寫樹幹腰圍</div>
       </div>
       <div>
         <label>樹全高 (m)</label>
         <input id="height" type="number" step="0.001" inputmode="decimal" placeholder="例：7.533">
+        <div class="field-err" id="e_height">⚠ 尚未填寫樹全高</div>
       </div>
     </div>
     <div class="pill">換算直徑：<b id="diaPreview">—</b> cm　<span class="hint">（腰圍 ÷ π）</span></div>
@@ -134,6 +142,7 @@
           <input id="closePhoto" type="file" accept="image/*">
         </label>
         <div class="preview" id="closePrev"><img></div>
+        <div class="field-err" id="e_close">⚠ 尚未上傳近照</div>
       </div>
       <div>
         <label>大範圍照片</label>
@@ -142,6 +151,7 @@
           <input id="widePhoto" type="file" accept="image/*">
         </label>
         <div class="preview" id="widePrev"><img></div>
+        <div class="field-err" id="e_wide">⚠ 尚未上傳大範圍照片</div>
       </div>
     </div>
   </div>

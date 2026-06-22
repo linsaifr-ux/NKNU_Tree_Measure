@@ -321,11 +321,42 @@ if (typeof document !== "undefined") {
       const pv = $(prevId), im = pv.querySelector("img");
       pv.style.display = "block"; im.removeAttribute("src");
       photos[key] = null;
-      loadPhoto(f, res => { photos[key] = res; im.src = res.dataUrl; });
+      loadPhoto(f, res => {
+        photos[key] = res; im.src = res.dataUrl;
+        const eb = $("e_" + key); if (eb) eb.classList.remove("show");
+      });
     });
   }
   hookPhoto("closePhoto", "closePrev", "close");
   hookPhoto("widePhoto", "widePrev", "wide");
+
+  // ── 軟性檢查：以下欄位未填時會提醒（紅字 + 確認框），但仍可選擇下載
+  const SOFT = [
+    { box: "e_position", input: "position", label: "位置敘述", empty: () => $("position").value.trim() === "" },
+    { box: "e_gpsX", input: "gpsX", label: "X 座標", empty: () => $("gpsX").value.trim() === "" },
+    { box: "e_gpsY", input: "gpsY", label: "Y 座標", empty: () => $("gpsY").value.trim() === "" },
+    { box: "e_circ", input: "circ", label: "樹幹腰圍", empty: () => $("circ").value.trim() === "" },
+    { box: "e_height", input: "height", label: "樹全高", empty: () => $("height").value.trim() === "" },
+    { box: "e_close", label: "近照", empty: () => !photos.close },
+    { box: "e_wide", label: "大範圍照片", empty: () => !photos.wide }
+  ];
+  function runSoftCheck() {
+    const missing = [];
+    SOFT.forEach(s => {
+      const bad = s.empty();
+      $(s.box).classList.toggle("show", bad);
+      if (s.input) $(s.input).classList.toggle("invalid", bad);
+      if (bad) missing.push(s.label);
+    });
+    return missing;
+  }
+  // 使用者一填入該欄，紅字立即消失
+  SOFT.forEach(s => {
+    if (!s.input) return;
+    $(s.input).addEventListener("input", () => {
+      if (!s.empty()) { $(s.box).classList.remove("show"); $(s.input).classList.remove("invalid"); }
+    });
+  });
 
   // 產生
   $("gen").addEventListener("click", async () => {
@@ -333,6 +364,16 @@ if (typeof document !== "undefined") {
     const treeNo = currentTreeNo();
     const species = currentSpecies();
     if (!species) { msg.className = "msg err"; msg.textContent = "請選擇或輸入樹種。"; return; }
+
+    // 軟性檢查：未填欄位 → 欄位旁紅字 + 頂部紅字 + 確認是否仍要下載
+    const missing = runSoftCheck();
+    if (missing.length) {
+      msg.className = "msg err";
+      msg.textContent = "尚未填寫：" + missing.join("、") + "。仍要下載嗎？（也可先補齊再下載）";
+      if (!confirm("以下欄位尚未填寫：\n　" + missing.join("、") + "\n\n仍要直接下載嗎？")) {
+        return; // 取消下載，保留紅字提示
+      }
+    }
 
     const circ = parseFloat($("circ").value);
     const height = parseFloat($("height").value);
