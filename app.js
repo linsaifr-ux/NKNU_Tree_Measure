@@ -130,10 +130,12 @@ function buildMeasureSheet(wb, d, imgs) {
   set("B11", "量測日期", { font: fnt(16), h: "center", v: "middle", wrap: true, border: allb, numFmt: "yyyy/m/d;@" });
   set("C11", "直徑(cm)", { font: fnt(14), h: "center", v: "middle", wrap: true, border: allb });
   set("D11", "樹全高(m)", { font: fnt(14), h: "center", v: "middle", wrap: true, border: allb });
+  // 註：原範例在此兩格有公式說明的「註解」，但 ExcelJS 的註解(VML)與圖片並存時
+  // 會讓 Excel 開檔時「修復內容」而把框線清掉、照片亂掉，故移除註解以確保相容性。
   set("E11", "幹材材積 m³ ", { font: fnt(14), h: "center", v: "middle", wrap: true, border: allb,
-      fill: fill(C_YELLOW), note: "幹材材積=\n(直徑/100/2)*(直徑/100/2)*圓周率*樹高*形數值" });
+      fill: fill(C_YELLOW) });
   set("F11", "碳匯量(ton)", { font: fnt(14), h: "center", v: "middle", wrap: true, border: allb,
-      fill: fill(C_GREEN), note: "碳匯量=\n材積*絕乾比重*碳含量比例" });
+      fill: fill(C_GREEN) });
 
   // 資料列 12-15（項次 1-4），第一列填入本次量測
   for (let i = 0; i < 4; i++) {
@@ -284,25 +286,42 @@ if (typeof document !== "undefined") {
   refresh();
 
   // 照片預覽 + 暫存
+  // 重新編碼：把手機照片的 EXIF 旋轉「燒進」影像、去掉方向標籤，並縮到合理大小。
+  // 這樣嵌進 Excel 時方向正確、比例不變（Excel 不會讀 EXIF，所以一定要先轉正）。
   const photos = { close: null, wide: null };
+  const MAXDIM = 1400;
+  function encode(src, w, h, cb) {
+    let dw = w, dh = h;
+    if (Math.max(w, h) > MAXDIM) {
+      const s = MAXDIM / Math.max(w, h);
+      dw = Math.round(w * s); dh = Math.round(h * s);
+    }
+    const cv = document.createElement("canvas");
+    cv.width = dw; cv.height = dh;
+    cv.getContext("2d").drawImage(src, 0, 0, dw, dh);
+    const url = cv.toDataURL("image/jpeg", 0.9);
+    cb({ base64: url.split(",")[1], ext: "jpeg", w: dw, h: dh, dataUrl: url });
+  }
+  function loadPhoto(file, cb) {
+    if (window.createImageBitmap) {
+      createImageBitmap(file, { imageOrientation: "from-image" })
+        .then(bm => { encode(bm, bm.width, bm.height, cb); bm.close && bm.close(); })
+        .catch(useImg);
+    } else { useImg(); }
+    function useImg() {
+      const img = new Image();
+      img.onload = () => encode(img, img.naturalWidth, img.naturalHeight, cb);
+      img.src = URL.createObjectURL(file);
+    }
+  }
   function hookPhoto(inputId, prevId, key) {
     $(inputId).addEventListener("change", e => {
       const f = e.target.files[0];
       if (!f) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const dataUrl = ev.target.result;
-        const img = new Image();
-        img.onload = () => {
-          const ext = (f.type === "image/png") ? "png" : "jpeg";
-          photos[key] = { base64: dataUrl.split(",")[1], ext, w: img.naturalWidth, h: img.naturalHeight };
-        };
-        img.src = dataUrl;
-        const pv = $(prevId);
-        pv.querySelector("img").src = dataUrl;
-        pv.style.display = "block";
-      };
-      reader.readAsDataURL(f);
+      const pv = $(prevId), im = pv.querySelector("img");
+      pv.style.display = "block"; im.removeAttribute("src");
+      photos[key] = null;
+      loadPhoto(f, res => { photos[key] = res; im.src = res.dataUrl; });
     });
   }
   hookPhoto("closePhoto", "closePrev", "close");
